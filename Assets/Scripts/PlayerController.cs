@@ -16,7 +16,7 @@ public class PlayerController : MonoBehaviour {
 
     [SerializeField] [Range(0.0f, 0.5f)] float moveSmoothTime = 0.3f;
     [SerializeField] [Range(0.0f, 0.5f)] float mouseSmoothTime = 0.03f;
-    [SerializeField] int weaponDamage = 50;
+    [SerializeField] int weaponDamage = 25;
     [SerializeField] float fireRate = 0.2f;
     [SerializeField] TextMeshProUGUI healthText;
 

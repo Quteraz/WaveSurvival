@@ -1,14 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public delegate void HitHandler(int WeaponDamage);
 
 public class SpawnManager : MonoBehaviour {
-    [SerializeField] float limit = 45f;
+    [SerializeField] float limit = 2.5f;
     [SerializeField] EnemyController[] enemies;
+    [SerializeField] TextMeshProUGUI waveText;
 
-    private CharacterController player;
+    private List<GameObject> spawnpoints =  new List<GameObject>();
     private List<List<EnemyController>> enemyPool = new List<List<EnemyController>>();
 
     private int wave = 1;
@@ -20,20 +22,23 @@ public class SpawnManager : MonoBehaviour {
     
     // Start is called before the first frame update
     void Start() {
-        player = GameObject.Find("Player").GetComponent<CharacterController>();
+        GetSpawnpoints();
         CreateEnemyPool();
 
         // start the waves
-        SpawnWave();
+        StartCoroutine(SpawnWave());
     }
 
     // Update is called once per frame
     void Update() {
     }
 
-    void SpawnWave () {
+    IEnumerator SpawnWave() {
         // signals that a wave is currently spawning
+        waveText.text = "Wave: " + wave;
         waveSpawning = true;
+
+
 
         // rules: spawn random enemies, max wavecount/2 red and max wavecount/4 green
             int maxRed = wave/2;
@@ -45,33 +50,41 @@ public class SpawnManager : MonoBehaviour {
             int waveLength = (int)(Mathf.Pow(1.1f, wave) + wave);
 
         for (int i = 0; i < waveLength; i++) {
-            // when all enemies in current wave is killed
+            // wait for 5 seconds before spawning next enemy
+            yield return new WaitForSeconds(5);
+            // Spawn random enemy at random spawnpoint
             int index = Random.Range(0, enemies.Length);
+            int spawnIndex = Random.Range(0, spawnpoints.Count);
 
             if (index == 1 && numRed < maxRed) {
                 // Red spawns in a cluster of 3
                 for (int j=0;j<3;j++) {  
-                    SpawnEnemy(index);
+                    SpawnEnemy(index, spawnIndex);
                 }
+                numRed++;
             } else if (index == 2 && numGreen < maxGreen) {
-                SpawnEnemy(index);
+                SpawnEnemy(index, spawnIndex);
+                numGreen++;
             } else {
-                SpawnEnemy(0);
+                SpawnEnemy(0, spawnIndex);
             }
+            Debug.Log("Enemy spawned: " + enemyCounter);
         }
-
-        // signals that the wave is done spawning
+        // end of wave
+        Debug.Log("end of wave");
         wave++;
         waveSpawning = false;
     }
 
-    void SpawnEnemy (int index) {
-        Vector3 spawnPos = new Vector3(Random.Range(- limit, limit), 1, Random.Range(- limit, limit));
+    void SpawnEnemy (int index, int spawnIndex) {
+        Vector3 spawnOffset = new Vector3(Random.Range(- limit, limit), 0, Random.Range(- limit, limit));
         
         EnemyController enemy = getEnemy(index);
         if (enemy != null) {
-            enemy.gameObject.transform.position = spawnPos;
+            Vector3 spawnPos = spawnpoints[spawnIndex].transform.position;
+            enemy.gameObject.transform.position = spawnPos + spawnOffset;
             enemy.gameObject.SetActive(true);
+            enemy.EnemyKilled -= EnemyCounter;
             enemy.EnemyKilled += EnemyCounter;
             enemyCounter++;
         }
@@ -88,6 +101,10 @@ public class SpawnManager : MonoBehaviour {
 
     void EnemyCounter () {
         enemyCounter--;
+        Debug.Log("enemy killed: " + waveSpawning + " : " + enemyCounter);
+        if (!waveSpawning && enemyCounter == 0) {
+            StartCoroutine(SpawnWave());
+        }
     }
 
     void CreateEnemyPool() {
@@ -98,6 +115,13 @@ public class SpawnManager : MonoBehaviour {
                 enemy.gameObject.SetActive(false);
                 enemyPool[i].Add(enemy);
             }
+        }
+    }
+
+    void GetSpawnpoints () {
+        int len = transform.childCount;
+        for (int i = 0; i < len; i++) {
+            spawnpoints.Add(transform.GetChild(i).gameObject);
         }
     }
 }

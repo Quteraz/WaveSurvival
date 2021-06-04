@@ -452,7 +452,7 @@ MonoBehaviour:
   speed: 5
   mouseSensitivity: 1.7
   gravity: -15
-  moveSmoothTime: 0
+  moveSmoothTime: 0.102
   mouseSmoothTime: 0.03
   weaponDamage: 25
   fireRate: 0.2

@@ -11,7 +11,7 @@ public class EnemyController : MonoBehaviour {
     [SerializeField] float attackTime = 1;
     [SerializeField] int attackDamage = 1;
 
-    public int health = 100;
+    [SerializeField] int startHealth = 100;
     private float gravityVelocity = 0f;
     private bool freeze = false;
 
@@ -20,11 +20,12 @@ public class EnemyController : MonoBehaviour {
     private NavMeshAgent agent;
 
     public event EnemyKilled EnemyKilled;
+    private int health;
 
     // Start is called before the first frame update
     void Start () {
+        health = startHealth;
         player = GameObject.Find("Player");
-        manager = GameObject.Find("GameManager").GetComponent<GameManager>();
         agent = GetComponent<NavMeshAgent>();
     }
 
@@ -35,14 +36,6 @@ public class EnemyController : MonoBehaviour {
         }
     }
 
-    private IEnumerator Freeze () {
-        freeze = true;
-
-        yield return new WaitForSeconds(attackTime);
-
-        freeze = false;
-    }
-
     void FindPlayer () {
         agent.SetDestination(player.transform.position);
     }
@@ -50,12 +43,34 @@ public class EnemyController : MonoBehaviour {
     public void ReduceHealth (int weaponDamage) {
         // if (onHit != null)
         health -= weaponDamage;
+        // Debug.Log("EnemyHealth: " + health);
         if (health <= 0) {
             if (EnemyKilled != null)
                 EnemyKilled();
             
             gameObject.SetActive(false);
-            health = 100;
+            health = startHealth;
+        }
+    }
+
+    IEnumerator Attacking (Collider other) {
+        while (freeze) {
+            other.GetComponent<PlayerController>().ReduceHealth(attackDamage);
+            yield return new WaitForSeconds(attackTime);
+        }
+    }
+
+    private void OnTriggerEnter(Collider other) {
+        if (other.CompareTag("Player")) {
+            agent.isStopped = true;
+            freeze = true;
+            StartCoroutine(Attacking(other));
+        }
+    }
+    private void OnTriggerExit(Collider other) {
+        if (other.CompareTag("Player")) {
+            freeze = false;
+            agent.isStopped = false;
         }
     }
 }
