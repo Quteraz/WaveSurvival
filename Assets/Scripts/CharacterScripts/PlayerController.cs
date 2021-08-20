@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public delegate void PlayerPosition();
+// public delegate void PlayerPosition();
+public delegate void OnPlayerDead();
+public delegate void OnHealthChange(int newHealth);
 
 public class PlayerController : MonoBehaviour {
     // serialized variables
@@ -18,7 +20,7 @@ public class PlayerController : MonoBehaviour {
     [SerializeField] [Range(0.0f, 0.5f)] float mouseSmoothTime = 0.03f;
     [SerializeField] int weaponDamage = 25;
     [SerializeField] float fireRate = 0.2f;
-    [SerializeField] TextMeshProUGUI healthText;
+    [SerializeField] SpawnManager spawnManager;
 
     // Private variables
     private float cameraPitch;
@@ -35,12 +37,17 @@ public class PlayerController : MonoBehaviour {
     private CharacterController controller;
     private AudioSource gunShot;
 
+    // Events
+    public event OnHealthChange OnHealthChange;
+
     // Start is called before the first frame update
     void Start() {
         controller = GetComponent<CharacterController>();
         gunShot = GetComponent<AudioSource>();
 
-        healthText.text = "Health: " + health;
+        spawnManager.OnPlayerHit += ReduceHealth;
+
+        ReduceHealth(0);
 
         if (lockedCursor) {
             Cursor.lockState = CursorLockMode.Locked;
@@ -107,6 +114,14 @@ public class PlayerController : MonoBehaviour {
 
     public void ReduceHealth (int damage) {
         health -= damage;
-        healthText.text = "Health: " + health;
+        if (OnHealthChange != null) {
+            OnHealthChange(health);
+        }
+    }
+
+    private void OnDestroy() {
+        if (spawnManager != null) {
+            spawnManager.OnPlayerHit -= ReduceHealth;
+        }
     }
 }

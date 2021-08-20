@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public delegate void HitHandler(int WeaponDamage);
+public delegate void OnPlayerHealthChange(int weaponDamage);
 
 public class SpawnManager : MonoBehaviour {
     [SerializeField] float limit = 2.5f;
@@ -19,7 +19,7 @@ public class SpawnManager : MonoBehaviour {
     private bool waveSpawning;
     private int dificulty = 2;
 
-    public event HitHandler onHit;
+    public event OnPlayerHealthChange OnPlayerHit;
     
     // Start is called before the first frame update
     void Start() {
@@ -27,7 +27,7 @@ public class SpawnManager : MonoBehaviour {
         if (MainManager.Instance != null) {
             dificulty = MainManager.Instance.dificulty;
         }
-        
+
         GetSpawnpoints();
         CreateEnemyPool();
 
@@ -86,8 +86,12 @@ public class SpawnManager : MonoBehaviour {
             Vector3 spawnPos = spawnpoints[spawnIndex].transform.position;
             enemy.gameObject.transform.position = spawnPos + spawnOffset;
             enemy.gameObject.SetActive(true);
-            enemy.EnemyKilled -= EnemyCounter;
-            enemy.EnemyKilled += EnemyCounter;
+
+            enemy.OnEnemyDead -= EnemyCounter;
+            enemy.OnPlayerHit -= PlayerHit;
+
+            enemy.OnEnemyDead += EnemyCounter;
+            enemy.OnPlayerHit += PlayerHit;
             enemyCounter++;
         }
     }
@@ -106,6 +110,12 @@ public class SpawnManager : MonoBehaviour {
         Debug.Log("enemy killed: " + waveSpawning + " : " + enemyCounter);
         if (!waveSpawning && enemyCounter == 0) {
             StartCoroutine(SpawnWave());
+        }
+    }
+
+    void PlayerHit (int dmg) {
+        if (OnPlayerHit != null) {
+            OnPlayerHit(dmg);
         }
     }
 
